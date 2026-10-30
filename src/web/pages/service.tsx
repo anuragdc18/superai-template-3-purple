@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import {
   ArrowRight,
   BadgeCheck,
@@ -12,7 +12,9 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { findService, serviceUrl, waLink } from "../lib/site";
+import { findService, serviceUrl, slugify, waLink } from "../lib/site";
+import { PackageCards, usePackagesFor } from "../components/content-ui";
+import { useContent } from "../queries/content";
 import { LeadForm } from "../components/lead-form";
 import { WaIcon } from "../components/header";
 import { telHref, useSite } from "../queries/site";
@@ -55,10 +57,19 @@ export default function ServicePage() {
   const { cat: catSlug, service: serviceSlug } = useParams<{ cat: string; service: string }>();
   const { cat, service } = findService(catSlug, serviceSlug);
   const site = useSite();
+  const waMsg = useContent().whatsapp;
+  const pkgs = usePackagesFor(catSlug, service?.name);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [catSlug, serviceSlug]);
+
+  const edits = useContent().services;
+  const [, navigate] = useLocation();
+  const moved = !service ? edits.find((e) => e.cat === catSlug && e.original && slugify(e.original) === serviceSlug && !e.hidden && e.name !== e.original) : undefined;
+  useEffect(() => {
+    if (moved) navigate(serviceUrl(moved.cat, moved.name), { replace: true });
+  }, [moved, navigate]);
 
   if (!cat || !service) {
     return (
@@ -175,6 +186,13 @@ export default function ServicePage() {
               </ol>
             </Block>
 
+            {pkgs.length > 0 && (
+              <div>
+                <h2 className="mb-5 text-[26px]">Packages & Pricing</h2>
+                <PackageCards packages={pkgs} compact />
+              </div>
+            )}
+
             <div>
               <h2 className="mb-5 text-[26px]">Common Questions</h2>
               <FaqList items={faqs} />
@@ -218,7 +236,7 @@ export default function ServicePage() {
                 <Phone className="h-4 w-4" /> Call Us
               </a>
               <a
-                href={waLink(site.whatsapp, `Hi, I need help with ${service.name}`)}
+                href={waLink(site.whatsapp, waMsg.serviceMessages[service.name] || waMsg.serviceMessage.replace("{service}", service.name))}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-center gap-2 rounded-full bg-wa py-3.5 font-bold text-white hover:brightness-95"

@@ -5,6 +5,7 @@ import { Menu, Minus, Phone, Plus, X, ArrowRight, LayoutDashboard } from "lucide
 import { CATEGORIES, serviceUrl } from "../lib/site";
 import { telHref, useSite } from "../queries/site";
 import { authClient } from "../lib/auth";
+import { useExtraLinks } from "./content-ui";
 
 export function Logo({ light = false }: { light?: boolean }) {
   const site = useSite();
@@ -34,6 +35,7 @@ function WaIcon({ className = "h-4 w-4" }: { className?: string }) {
 export { WaIcon };
 
 export function Header() {
+  const extra = useExtraLinks();
   const [open, setOpen] = useState(false);
   const [acc, setAcc] = useState<string | null>("registration");
   const [scrolled, setScrolled] = useState(false);
@@ -132,6 +134,23 @@ export function Header() {
                 </div>
               </div>
             ))}
+            {extra.length > 0 && (
+              <div className="group relative">
+                <button type="button" className={`flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[15px] font-semibold transition ${extra.some((x) => loc.startsWith(x.to)) ? "text-royal" : "text-navy group-hover:text-royal"}`}>
+                  More
+                </button>
+                <div className="invisible absolute top-full right-0 w-[240px] pt-2 opacity-0 transition duration-200 group-hover:visible group-hover:opacity-100">
+                  <div className="rounded-[24px] border border-line bg-white p-2 shadow-[0_24px_50px_-20px_rgba(139,92,246,0.45)]">
+                    {[...extra, { to: "/contact", label: "Contact Us" }].map((x) => (
+                      <Link key={x.to} to={x.to} className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-[14.5px] font-medium text-navy hover:bg-surface hover:text-royal">
+                        <span className="h-1.5 w-1.5 rounded-full bg-royal/60" />
+                        {x.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </nav>
         </div>
       </header>
@@ -191,6 +210,11 @@ export function Header() {
                 </div>
               );
             })}
+            {[...extra, { to: "/contact", label: "Contact Us" }].map((x) => (
+              <Link key={x.to} to={x.to} className="block border-b border-line py-3.5 font-semibold text-navy">
+                {x.label}
+              </Link>
+            ))}
             {session && (
               <Link to="/admin/dashboard" className="block py-3.5 font-semibold text-royal">
                 Owner Dashboard

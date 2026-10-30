@@ -27,6 +27,8 @@ import { CATEGORIES, POPULAR, SLIDES, serviceUrl, waLink } from "../lib/site";
 import { telHref, useSite } from "../queries/site";
 import { LeadForm } from "../components/lead-form";
 import { IconDot, P, catStyle } from "../components/pastel";
+import { useContent } from "../queries/content";
+import { PostCard } from "../components/content-ui";
 
 function SectionHead({ eyebrow, title, text }: { eyebrow?: string; title: string; text?: string }) {
   return (
@@ -264,16 +266,11 @@ const WHY = [
   { icon: Headphones, color: P.pink, title: "Real experts", text: "CA, CS and design experts guide you at every step." },
 ];
 
-const REVIEWS = [
-  { name: "Ravi K.", city: "Hyderabad", text: "My GST and company registration were done in a week. Very smooth, and they explained everything simply." },
-  { name: "Priya S.", city: "Bengaluru", text: "They designed our logo and website together. Looks very professional and customers notice it." },
-  { name: "Arjun M.", city: "Pune", text: "Our Instagram enquiries doubled in 2 months. The team posts on time every week." },
-];
 
-function Stars({ className = "h-4 w-4" }: { className?: string }) {
+function Stars({ className = "h-4 w-4", n = 5 }: { className?: string; n?: number }) {
   return (
     <span className="flex gap-0.5 text-[#f59e0b]">
-      {[0, 1, 2, 3, 4].map((k) => (
+      {Array.from({ length: n }, (_, k) => k).map((k) => (
         <Star key={k} className={`${className} fill-current`} />
       ))}
     </span>
@@ -282,6 +279,9 @@ function Stars({ className = "h-4 w-4" }: { className?: string }) {
 
 function TrustAndReviews() {
   const site = useSite();
+  const content = useContent();
+  const rs = content.reviewsSection;
+  const REVIEWS = rs.show ? content.reviews.slice(0, 3) : [];
   return (
     <section className="bg-surface pb-20 pt-[88px]">
       <div className="container-x">
@@ -296,27 +296,31 @@ function TrustAndReviews() {
           ))}
         </div>
 
+        {REVIEWS.length > 0 && <>
         <div className="mb-7 mt-[66px] flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-[28px] leading-tight">What Our Clients Say</h3>
-          <span className="flex items-center gap-2 text-[15px] font-semibold text-navy">
-            <Stars /> 4.8 on Google
-          </span>
+          {rs.rating && (
+            <a href={rs.googleUrl || undefined} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[15px] font-semibold text-navy">
+              <Stars /> {rs.rating} on Google{rs.ratingCount ? ` (${rs.ratingCount})` : ""}
+            </a>
+          )}
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {REVIEWS.map((r) => (
-            <figure key={r.name} className="soft-card p-6 pb-7">
-              <Stars />
+            <figure key={r.id} className="soft-card p-6 pb-7">
+              <Stars n={r.rating} />
               <blockquote className="mt-3 text-[16.5px] font-medium leading-[1.58] text-navy">"{r.text}"</blockquote>
               <figcaption className="mt-5 flex items-center gap-3">
                 <span className="grid h-10 w-10 place-items-center rounded-full bg-royal text-[15px] font-bold text-white">{r.name[0]}</span>
                 <span>
                   <span className="block text-[16px] font-bold leading-tight text-navy">{r.name}</span>
-                  <span className="block text-[13.5px] font-medium leading-tight">{r.city}</span>
+                  <span className="block text-[13.5px] font-medium leading-tight">{r.place}</span>
                 </span>
               </figcaption>
             </figure>
           ))}
         </div>
+        </>}
       </div>
     </section>
   );
@@ -324,13 +328,6 @@ function TrustAndReviews() {
 
 // ───────────────────────── FAQ ─────────────────────────
 
-const FAQS = [
-  { q: "Do I need to visit your office?", a: "No. Everything is done online. You can share documents on WhatsApp or email." },
-  { q: "How long does GST registration take?", a: "Usually 3 to 7 working days, once we have all your documents." },
-  { q: "Can you do registration and the website together?", a: "Yes. Many clients start with registration and logo, then add a website. We offer combo prices." },
-  { q: "How do I pay?", a: "You can pay by UPI, debit/credit card or bank transfer. You get a proper GST invoice." },
-  { q: "I'm not sure which registration I need. Can you help?", a: "Yes — that's what the free consultation is for. Our expert will suggest the right option for you." },
-];
 
 export function FaqList({ items }: { items: { q: string; a: string }[] }) {
   const [open, setOpen] = useState<number | null>(0);
@@ -363,12 +360,36 @@ export function FaqList({ items }: { items: { q: string; a: string }[] }) {
 }
 
 function Faq() {
+  const FAQS = useContent().faqs;
+  if (!FAQS.length) return null;
   return (
     <section className="bg-page pt-[88px]">
       <div className="container-x">
         <SectionHead eyebrow="FAQ" title="Common Questions" />
         <div className="mx-auto max-w-[720px]">
           <FaqList items={FAQS} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LatestPosts() {
+  const content = useContent();
+  if (!content.blog.show || !content.posts.length) return null;
+  return (
+    <section className="bg-page pt-[88px]">
+      <div className="container-x">
+        <SectionHead eyebrow={content.blog.title || "Blog"} title="Tips & Guides" />
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {content.posts.slice(0, 3).map((p) => (
+            <PostCard key={p.id} p={p} />
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link to="/blog" className="inline-flex items-center gap-1.5 text-[16px] font-bold text-royal hover:gap-2.5">
+            See all articles <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>
@@ -408,6 +429,7 @@ export default function Index() {
       <Popular />
       <Process />
       <TrustAndReviews />
+      <LatestPosts />
       <Faq />
       <CtaBand />
     </>
